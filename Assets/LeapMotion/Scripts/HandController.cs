@@ -75,7 +75,7 @@ public class HandController : MonoBehaviour {
     if (enableRecordPlayback && recordingAsset != null)
       recorder_.Load(recordingAsset);
 
-	leap_controller_.EnableGesture (Gesture.GestureType.TYPE_CIRCLE);
+	//leap_controller_.EnableGesture (Gesture.GestureType.TYPE_CIRCLE);
   }
 
   private void IgnoreCollisions(GameObject first, GameObject second, bool ignore = true) {
@@ -248,52 +248,61 @@ public class HandController : MonoBehaviour {
   void handleRise(Frame frame) {
 	if (lastFrame != null) {
 		HandList hands = frame.Hands;
+
+		GameObject[] spheres = GameObject.FindGameObjectsWithTag("AUDIOSPHERE");
 		
 		foreach (Hand h in hands) {
 			Vector translation = h.Translation(lastFrame);
 			Vector palm = h.PalmNormal;
 			//Debug.Log("x: " + direction.x + ", y: " + direction.y + ", z: " + direction.z);
+			float minDist = float.MaxValue;
+			GameObject sphere = null;
+			foreach(GameObject go in spheres) {
+				float dist = Vector3.Distance(go.transform.position, h.PalmPosition.ToUnity());	
+				if (dist < minDist) {
+					minDist = dist;
+					sphere = go;
+				}
+			}
+			if (sphere == null) {
+				Debug.Log("messed up finding correct sphere");
+			}
+			AudioSource source = sphere.GetComponent("AudioSource") as AudioSource;
+
 			if (palm.Pitch < -1 && translation.Magnitude > 5 && translation.Pitch < -1) {
 				//moving down face down
 				Debug.Log("Left? " + h.IsLeft + " is moving down");
 				//left hand turns down pitch, right hand turns down volume
-				Collider[] objectsInVicinity = Physics.OverlapSphere (transform.position, 10f);
-				Debug.Log(objectsInVicinity.Length);
-				foreach (Collider coll in objectsInVicinity) {
-					AudioSource source = coll.gameObject.GetComponent("AudioSource") as AudioSource;
-					if (source != null) {
-						if (h.IsLeft) {
-							source.pitch *= 2f;
-							print(source.pitch);
-						} else {
-							source.volume *= 0.8f;
-							print(source.volume);
-						}
+
+				
+				if (source != null) {
+					if (h.IsLeft) {
+						source.pitch *= 0.8f;
+						print(source.pitch);
+					} else {
+						source.volume *= 0.9f;
+						print(source.volume);
 					}
 				}
-			}
-			
+
 			if (palm.Pitch > 1 && translation.Magnitude > 5 && translation.Pitch > 1) {
 				//moving up face up
-				//left hand turns up pitch, right hand turns up volume
 				Debug.Log("Left? " + h.IsLeft + " is moving up");
-				Collider[] objectsInVicinity = Physics.OverlapSphere (transform.position, 10f);
-				foreach (Collider coll in objectsInVicinity) {
-					AudioSource source = coll.GetComponent<AudioSource>();
-					if (source != null) {
-						if (h.IsLeft) {
-							source.pitch *= 2f;
-							Debug.Log(source.pitch.ToString());
-						} else {
-							source.volume *= 1.20f;
-							Debug.Log(source.volume.ToString());
-						}
+				//left hand turns up pitch, right hand turns up volume
+
+				if (source != null) {
+					if (h.IsLeft) {
+						source.pitch *= 1.2f;
+						print(source.pitch);
+					} else {
+						source.volume *= 1.1f;
+						print(source.volume);
 					}
 				}
 			}
 		}
+		}
 	}
-
   }
 
   void handleGestures(Frame frame) {
